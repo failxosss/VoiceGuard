@@ -1,0 +1,75 @@
+# =========================================================
+#  VoiceGuard configuration
+# =========================================================
+
+# Path (relative to plugins/VoiceGuard/) to the Vosk model directory for
+# speech recognition. Download a Czech model (e.g. vosk-model-small-cs-0.4
+# or vosk-model-cs-0.4-rhasspy) from https://alphacephei.com/vosk/models
+# and unpack it here. See README.md for details.
+stt:
+  language: cs
+  model-path: models/vosk-model-small-cs-0.4
+  # Number of parallel STT worker threads. Each Vosk recognizer is fairly
+  # light on CPU but the model itself is shared and thread-safe for
+  # multiple recognizers, so 2-4 is reasonable for a small/medium server.
+  worker-threads: 2
+  # Sample rate Vosk expects. Simple Voice Chat captures at 48000 Hz mono;
+  # VoiceGuard resamples down to this rate before handing audio to Vosk.
+  sample-rate: 16000
+
+# Audio buffering / speech-segment detection.
+audio:
+  # If no new microphone packet arrives for this many milliseconds, the
+  # buffered audio is considered a finished sentence and sent to STT.
+  silence-timeout-ms: 500
+  # Hard cap on one buffered segment so a player who talks non-stop can't
+  # grow memory usage indefinitely or delay detection forever.
+  max-segment-ms: 8000
+  # Segments shorter than this are discarded (avoids wasting STT time on
+  # coughs, clicks, one syllable, etc.)
+  min-segment-ms: 250
+
+blocked-words:
+  - slovo1
+  - slovo2
+  - slovo3
+
+text-normalization:
+  enabled: true
+  lowercase: true
+  remove-punctuation: true
+  normalize-spaces: true
+  # Collapses separators commonly used to dodge filters, e.g. "s.l.o.v.o"
+  # or "s-l-o-v-o" -> "slovo". Kept conservative to avoid false positives.
+  collapse-letter-spacing: true
+
+punishment:
+  enabled: true
+  duration: 10m
+  escalation:
+    enabled: true
+    levels:
+      - violations: 1
+        duration: 1m
+      - violations: 2
+        duration: 5m
+      - violations: 3
+        duration: 30m
+      - violations: 4
+        duration: 2h
+      - violations: 5
+        duration: 1d
+
+privacy:
+  store-audio: false
+  store-transcriptions: true
+
+messages:
+  prefix: '&8[&bVoiceGuard&8] &r'
+  word-detected: '&cBylo zjištěno zakázané slovo.'
+  mute-applied: '&cVoice mute: &e%duration%'
+  mute-expired: '&aTvůj voice mute vypršel, můžeš opět mluvit.'
+  already-muted: '&cJsi voice-mutován ještě %remaining%.'
+  no-permission: '&cNemáš oprávnění k tomuto příkazu.'
+  player-not-found: '&cHráč nebyl nalezen.'
+  player-offline-no-history: '&cHráč není online a offline historie zatím není podporována přes jméno, použij UUID.'

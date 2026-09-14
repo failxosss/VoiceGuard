@@ -1,0 +1,40 @@
+name: VoiceGuard
+version: '${project.version}'
+main: cz.voiceguard.VoiceGuardPlugin
+api-version: '1.21'
+author: VoiceGuard
+description: Voice chat moderation for Simple Voice Chat using offline (Vosk) speech-to-text.
+
+# Simple Voice Chat MUST be present and loaded before VoiceGuard.
+depend: [voicechat]
+
+commands:
+  voiceguard:
+    description: Main VoiceGuard command
+    aliases: [vg]
+    usage: /<command> <reload|status|mute|unmute|history|test>
+
+permissions:
+  voiceguard.admin:
+    description: Grants access to all VoiceGuard admin commands
+    default: op
+    children:
+      voiceguard.reload: true
+      voiceguard.mute: true
+      voiceguard.unmute: true
+      voiceguard.history: true
+  voiceguard.reload:
+    description: Allows reloading the VoiceGuard configuration
+    default: op
+  voiceguard.mute:
+    description: Allows manually voice-muting players
+    default: op
+  voiceguard.unmute:
+    description: Allows manually voice-unmuting players
+    default: op
+  voiceguard.history:
+    description: Allows viewing a player's violation history
+    default: op
+  voiceguard.bypass:
+    description: Players with this permission are never scanned or muted by VoiceGuard
+    default: false

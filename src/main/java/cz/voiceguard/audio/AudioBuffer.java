@@ -2,6 +2,7 @@ package cz.voiceguard.audio;
 
 import de.maxhenkel.opus4j.OpusDecoder;
 
+import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -9,11 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * Accumulates decoded PCM audio for a single player across multiple
  * MicrophonePacketEvents until a speech segment boundary is detected
  * (silence timeout or max length reached).
- * <p>
- * Owns its own {@link OpusDecoder} instance because Opus decoding is
- * stateful (it uses the previous frame for packet-loss concealment /
- * interpolation), so decoders must not be shared between players or reused
- * out of order.
+ *
+ * Owns its own OpusDecoder instance because Opus decoding is stateful.
  */
 public final class AudioBuffer {
 
@@ -32,8 +30,16 @@ public final class AudioBuffer {
 
     public AudioBuffer(UUID playerId) {
         this.playerId = playerId;
-        this.decoder = new OpusDecoder(SOURCE_SAMPLE_RATE, CHANNELS);
-        this.decoder.setFrameSize(FRAME_SIZE);
+
+        try {
+            this.decoder = new OpusDecoder(SOURCE_SAMPLE_RATE, CHANNELS);
+            this.decoder.setFrameSize(FRAME_SIZE);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Failed to initialize Opus decoder for player " + playerId,
+                    e
+            );
+        }
     }
 
     public UUID getPlayerId() {
@@ -41,9 +47,8 @@ public final class AudioBuffer {
     }
 
     /**
-     * Decodes and appends one microphone packet. Thread-safe: packets arrive
-     * on Simple Voice Chat's networking thread, while flush() is called from
-     * a scheduler task, so both can race.
+     * Decodes and appends one microphone packet.
+     * Thread-safe.
      */
     public void appendPacket(byte[] opusData) {
         lock.lock();
@@ -51,17 +56,37 @@ public final class AudioBuffer {
             if (closed) {
                 return;
             }
+
             short[] decoded = decoder.decode(opusData);
+
             long now = System.currentTimeMillis();
+
             if (segmentStartMillis < 0) {
                 segmentStartMillis = now;
             }
+
             lastPacketMillis = now;
 
             short[] combined = new short[pcm.length + decoded.length];
-            System.arraycopy(pcm, 0, combined, 0, pcm.length);
-            System.arraycopy(decoded, 0, combined, pcm.length, decoded.length);
+
+            System.arraycopy(
+                    pcm,
+                    0,
+                    combined,
+                    0,
+                    pcm.length
+            );
+
+            System.arraycopy(
+                    decoded,
+                    0,
+                    combined,
+                    pcm.length,
+                    decoded.length
+            );
+
             pcm = combined;
+
         } finally {
             lock.unlock();
         }
@@ -89,12 +114,15 @@ public final class AudioBuffer {
         if (lastPacketMillis < 0) {
             return 0L;
         }
+
         return System.currentTimeMillis() - lastPacketMillis;
     }
 
     /**
-     * Atomically takes ownership of the currently buffered PCM audio and
-     * clears the buffer for the next segment. Returns null if empty.
+     * Atomically takes ownership of the currently buffered PCM audio
+     * and clears the buffer for the next segment.
+     *
+     * Returns null if empty.
      */
     public short[] drain() {
         lock.lock();
@@ -102,10 +130,14 @@ public final class AudioBuffer {
             if (pcm.length == 0) {
                 return null;
             }
+
             short[] result = pcm;
+
             pcm = new short[0];
             segmentStartMillis = -1L;
+
             return result;
+
         } finally {
             lock.unlock();
         }
@@ -116,14 +148,19 @@ public final class AudioBuffer {
     }
 
     /**
-     * Releases native decoder resources. Not calling this leaks native
-     * memory (see opus4j docs) - always call when a player disconnects.
+     * Releases native decoder resources.
      */
     public void close() {
         lock.lock();
         try {
             if (!closed) {
-                decoder.close();
+                try {
+                    decoder.close();
+                } catch (IOException e) {
+                    // Native decoder cleanup failed.
+                    // We still mark the buffer as closed so it cannot be reused.
+                }
+
                 closed = true;
             }
         } finally {

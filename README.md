@@ -116,7 +116,7 @@ The shaded jar (including opus4j, Vosk's Java bindings + JNA, and sqlite-jdbc) i
 ## 5. Installing the Czech Vosk model
 
 VoiceGuard does **not** bundle a speech model (they're tens to hundreds of MB and licensed
-separately). Download one from **https://alphacephei.com/vosk/models**:
+separately). Download one from **https://alphacephei.com/vosk/models/vosk-model-small-cs-0.4-rhasspy.zip**:
 
 - `vosk-model-small-cs-0.4` — small (~50 MB), fast, lower accuracy. Good default for a
   moderation filter on modest hardware.

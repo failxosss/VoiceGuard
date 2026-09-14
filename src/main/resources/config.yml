@@ -30,9 +30,10 @@ audio:
   min-segment-ms: 250
 
 blocked-words:
-  - slovo1
-  - slovo2
-  - slovo3
+  - nigga
+  - niga
+  - negr
+  - niger
 
 text-normalization:
   enabled: true

@@ -2,7 +2,7 @@ name: VoiceGuard
 version: '${project.version}'
 main: cz.voiceguard.VoiceGuardPlugin
 api-version: '1.21'
-author: VoiceGuard
+author: Failxos
 description: Voice chat moderation for Simple Voice Chat using offline (Vosk) speech-to-text.
 
 # Simple Voice Chat MUST be present and loaded before VoiceGuard.

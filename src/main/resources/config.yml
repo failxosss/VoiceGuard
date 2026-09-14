@@ -8,7 +8,7 @@
 # and unpack it here. See README.md for details.
 stt:
   language: cs
-  model-path: models/vosk-model-small-cs-0.4
+  model-path: models/vosk-model-small-cs-0.4-rhasspy
   # Number of parallel STT worker threads. Each Vosk recognizer is fairly
   # light on CPU but the model itself is shared and thread-safe for
   # multiple recognizers, so 2-4 is reasonable for a small/medium server.

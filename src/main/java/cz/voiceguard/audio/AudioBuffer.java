@@ -1,6 +1,7 @@
 package cz.voiceguard.audio;
 
 import de.maxhenkel.opus4j.OpusDecoder;
+import de.maxhenkel.opus4j.UnknownPlatformException;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -34,7 +35,7 @@ public final class AudioBuffer {
         try {
             this.decoder = new OpusDecoder(SOURCE_SAMPLE_RATE, CHANNELS);
             this.decoder.setFrameSize(FRAME_SIZE);
-        } catch (IOException e) {
+        } catch (IOException | UnknownPlatformException e) {
             throw new IllegalStateException(
                     "Failed to initialize Opus decoder for player " + playerId,
                     e
@@ -154,13 +155,7 @@ public final class AudioBuffer {
         lock.lock();
         try {
             if (!closed) {
-                try {
-                    decoder.close();
-                } catch (IOException e) {
-                    // Native decoder cleanup failed.
-                    // We still mark the buffer as closed so it cannot be reused.
-                }
-
+                decoder.close();
                 closed = true;
             }
         } finally {
